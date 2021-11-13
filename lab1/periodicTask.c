@@ -5,7 +5,8 @@
  * Base code for periodic thread execution using clock_nanosleep
  * Assumes that periods and execution times are below 1 second
  *    
- *
+ * Miguel Cabral - 93091
+ * Diogo Vicente - 93262
  *****************************************************************/
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -138,29 +139,36 @@ void * Thread_1_code(void *arg)
 
 int main(int argc, char *argv[])
 {
-	int err;
+	int err, prty;
 	pthread_t threadid;
 	struct sched_param parm; 
 	pthread_attr_t attr;
 	char procname[40]; 
 
+	/* Force CPU0 - A3 */
 
-	changeAffinity();
+	changeAffinity(); 		// Comment this line for A2
 
 	/* Process input args */
 	if(argc != 3) {
 	  printf("Usage: %s PROCNAME PRIORITY, where PROCNAME is a string and PRIORITY is a integer\n\r", argv[0]);
 	  return -1; 
 	}
-	
+	/*Passing priorities via command line, as an argument - A2 */
+	prty = atoi(argv[2]);
+	if(prty < 1 || prty > 99) {
+		printf("Invalid Priority, must vary from 1 to 99\n\r");
+		return -1;
+	}
+	parm.sched_priority = prty;    					
 	strcpy(procname, argv[1]);
 
-	//Create a fixed real-time priority - A1
+	/* Create a fixed real-time priority - A1 */
 	pthread_attr_init(&attr);
 	pthread_attr_setinheritsched(&attr,PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
-	parm.sched_priority = atoi(argv[2]);    					// Passing priorities via command line, as an argument - A2
 	pthread_attr_setschedparam(&attr, &parm);
+	
 	/* Create periodic thread/task */
 	err=pthread_create(&threadid, &attr, Thread_1_code, &procname);
  	if(err != 0) {
@@ -175,9 +183,6 @@ int main(int argc, char *argv[])
 		
 	return 0;
 }
-
-
-
 
 /* ***********************************************
 * Auxiliary functions 
@@ -201,7 +206,7 @@ void Heavy_Work(void)
 	/* These values can be tunned to cause a desired load*/
 	lower=0;
 	upper=100;
-	subInterval=480000;       //1000000;    
+	subInterval=585000;       //1000000;    
 
 	 /* Calculation */
 	 /* Finding step size */

@@ -2,11 +2,15 @@ CC =  gcc # Path to compiler
 L_FLAGS = -lrt -lpthread -lm
 #C_FLAGS = -g
 
-all: pt
+all: a1 a2 a3
 .PHONY: all
 
 # Project compilation
-pt: periodicTask.c
+a1: a1.c 
+	$(CC) $< -o $@ $(C_FLAGS) $(L_FLAGS)
+a2: a2.c 
+	$(CC) $< -o $@ $(C_FLAGS) $(L_FLAGS)
+a3: a3.c 
 	$(CC) $< -o $@ $(C_FLAGS) $(L_FLAGS)
 
 	
@@ -15,7 +19,7 @@ pt: periodicTask.c
 clean:
 	rm -f *.c~ 
 	rm -f *.o
-	rm pt
+	rm a1 a2 a3
 
 # Some notes
 # $@ represents the left side of the ":"

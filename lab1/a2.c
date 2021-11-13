@@ -8,7 +8,7 @@
  * Miguel Cabral - 93091
  * Diogo Vicente - 93262
  *****************************************************************/
-#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -54,17 +54,6 @@ uint64_t min_iat, max_iat; // Hold the minium/maximum observed inter arrival tim
 * Thread_1 code 
 * **************************/
 
-int changeAffinity(){
-	cpu_set_t cpuset;
-
-	/* Forces the process to execute only on CPU0 */
-	CPU_ZERO(&cpuset);
-	CPU_SET(0,&cpuset);
-	if(sched_setaffinity(0, sizeof(cpuset), &cpuset)) {
-		printf("\n Lock of process to CPU0 failed!!!");
-	return(1);
-	}
-}
 
 void * Thread_1_code(void *arg)
 {
@@ -145,9 +134,6 @@ int main(int argc, char *argv[])
 	pthread_attr_t attr;
 	char procname[40]; 
 
-	/* Force CPU0 - A3 */
-
-	changeAffinity(); 		// Comment this line for A2
 
 	/* Process input args */
 	if(argc != 3) {
@@ -155,19 +141,20 @@ int main(int argc, char *argv[])
 	  return -1; 
 	}
 	/*Passing priorities via command line, as an argument - A2 */
+	
 	prty = atoi(argv[2]);
 	if(prty < 1 || prty > 99) {
-		printf("Invalid Priority, must vary from 1 to 99\n\r");
+		printf("Invalid Priority, must vary from 1 to 99\n\r");      //Ensure that a valid priority is given 
 		return -1;
-	}
-	parm.sched_priority = prty;    					
+	} 
+	parm.sched_priority = prty;  					
 	strcpy(procname, argv[1]);
 
 	/* Create a fixed real-time priority - A1 */
 	pthread_attr_init(&attr);
 	pthread_attr_setinheritsched(&attr,PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
-	pthread_attr_setschedparam(&attr, &parm);
+	pthread_attr_setschedparam(&attr, &parm); 
 	
 	/* Create periodic thread/task */
 	err=pthread_create(&threadid, &attr, Thread_1_code, &procname);
@@ -206,7 +193,7 @@ void Heavy_Work(void)
 	/* These values can be tunned to cause a desired load*/
 	lower=0;
 	upper=100;
-	subInterval=585000;       //1000000;    
+	subInterval= 480000;       //1000000;    
 
 	 /* Calculation */
 	 /* Finding step size */

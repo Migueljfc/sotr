@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
 	/* Force CPU0 - A3 */
 
-	changeAffinity(); 		      // Comment this line for A2
+	changeAffinity(); 		     
 
 	/* Process input args */
 	if(argc != 3) {

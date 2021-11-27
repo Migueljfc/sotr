@@ -9,7 +9,7 @@ LDFLAGS := $(shell $(XENO_CONFIG) --skin=alchemy --ldflags)
 LDFLAGS += -lm  
 CC := $(shell $(XENO_CONFIG) --cc)
 
-EXECUTABLE := a1 
+EXECUTABLE := a1 a2 a3
 
 all: $(EXECUTABLE)
 

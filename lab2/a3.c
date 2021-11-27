@@ -20,7 +20,7 @@
 
 #define MS_2_NS(ms)(ms*1000*1000) /* Convert ms to ns */
 #define NS_IN_SEC 1000000000L
-#define BOOT_ITER 10
+
 /* *****************************************************
  * Define task structure for setting input arguments
  * *****************************************************/
@@ -36,10 +36,11 @@
 #define TASK_STKSZ 0 	// Default stack size
 
 #define TASK_A_PRIO 25 	// RT priority [0..99]
-#define TASK_A_PERIOD_NS MS_2_NS(1000)
+#define TASK_PERIOD_NS MS_2_NS(1000)
 
 RT_TASK task_a_desc; // Task decriptor
-
+RT_TASK task_b_desc;
+RT_TASK task_c_desc;
 
 /* *********************
 * Function prototypes
@@ -48,14 +49,29 @@ void catch_signal(int sig); 	/* Catches CTRL + C to allow a controlled terminati
 void wait_for_ctrl_c(void);
 void Heavy_Work(void);      	/* Load task */
 void task_code(void *args); 	/* Task body */
+int changeAffinity(RT_TASK task1,RT_TASK task2); //Change affinity to CPU0 
 
 
+/* *********************
+* Change Affinity function
+* **********************/
+int changeAffinity(RT_TASK task1, RT_TASK task2){
+	cpu_set_t cpuset;                                       //cpu_set bit mask.
+	CPU_ZERO(&cpuset);                                      //Initialize it all to 0
+	CPU_SET(0,&cpuset);                                     //Set the bit that represents core 0
+	if(rt_task_set_affinity(&task1,&cpuset) || rt_task_set_affinity(&task2,&cpuset)) {     //Set thread's CPU affinity mask to 0 
+		printf("\n Lock of process to CPU0 failed!!!");
+	return(1);
+	}
+}
 /* ******************
 * Main function
 * *******************/ 
 int main(int argc, char *argv[]) {
-	int err; 
+	int err,err2,err3; 
 	struct taskArgsStruct taskAArgs;
+	struct taskArgsStruct taskBArgs;
+	struct taskArgsStruct taskCArgs;
 	
 	/* Lock memory to prevent paging */
 	mlockall(MCL_CURRENT|MCL_FUTURE); 
@@ -63,17 +79,36 @@ int main(int argc, char *argv[]) {
 	/* Create RT task */
 	/* Args: descriptor, name, stack size, priority [0..99] and mode (flags for CPU, FPU, joinable ...) */
 	err=rt_task_create(&task_a_desc, "Task a", TASK_STKSZ, TASK_A_PRIO, TASK_MODE);
-	if(err) {
-		printf("Error creating task a (error code = %d)\n",err);
-		return err;
+    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 10, TASK_MODE);
+    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 75, TASK_MODE);
+	if(err || err2 || err3) {
+        if(err){
+            printf("Error creating task a (error code = %d)\n",err);
+		    return err;
+        }
+        else if(err2){
+            printf("Error creating task a (error code = %d)\n",err2);
+		    return err2;
+        }
+        else if(err3){
+            printf("Error creating task a (error code = %d)\n",err3);
+		    return err3;
+        }
 	} else 
 		printf("Task a created successfully\n");
 	
 			
 	/* Start RT task */
 	/* Args: task decriptor, address of function/implementation and argument*/
-	taskAArgs.taskPeriod_ns = TASK_A_PERIOD_NS; 	
+	taskAArgs.taskPeriod_ns = TASK_PERIOD_NS;
+	taskBArgs.taskPeriod_ns = TASK_PERIOD_NS; 
+	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS;
+
+	changeAffinity(task_b_desc,task_c_desc);
+
     rt_task_start(&task_a_desc, &task_code, (void *)&taskAArgs);
+	rt_task_start(&task_b_desc, &task_code, (void *)&taskBArgs);
+	rt_task_start(&task_c_desc, &task_code, (void *)&taskCArgs);
     
 	/* wait for termination signal */	
 	wait_for_ctrl_c();
@@ -90,20 +125,21 @@ void task_code(void *args) {
 	RT_TASK_INFO curtaskinfo;
 	struct taskArgsStruct *taskArgs;
 
-	RTIME ta, last_ta, max_ta = 0;
-	RTIME ita;
-	RTIME min_ta = LLONG_MIN;
+	RTIME ta=0;
 	unsigned long overruns;
 	int err;
-	int update = 0;
-	int niter = 0;
-
+	
 	/* Get task information */
 	curtask=rt_task_self();
 	rt_task_inquire(curtask,&curtaskinfo);
 	taskArgs=(struct taskArgsStruct *)args;
 	printf("Task %s init, period:%llu\n", curtaskinfo.name, taskArgs->taskPeriod_ns);
-
+	int nitter = 0 ;
+	int update = 0;
+	RTIME p;
+	RTIME last_ta;
+	RTIME max_iat = 0;
+	RTIME min_iat = LLONG_MAX ;
 
 	/* Set task as periodic */
 	err=rt_task_set_periodic(NULL, TM_NOW, taskArgs->taskPeriod_ns);
@@ -114,35 +150,29 @@ void task_code(void *args) {
 			printf("task %s overrun!!!\n", curtaskinfo.name);
 			break;
 		}
-		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
-		niter++;
-		
-		if (niter == BOOT_ITER) {
-			max_ta = ta - last_ta;
-			min_ta = ta - last_ta;
-			update = 1;
-		} else 
-		if (niter > BOOT_ITER) {
-			ita = ta - last_ta;
-			if(ita>max_ta){
-				max_ta = ita;
-				update = 1;
-		
-			}
-			if(ita<min_ta){
-				min_ta = ita;
-				update = 1;
-				
-			}
+		printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
+		nitter ++;
+		if(nitter == 1){
+			last_ta = ta;
+			continue;
 		}
-		/* Task "load" */
-		Heavy_Work();
+		
+		p = ta - last_ta ;
+		if(p>max_iat){
+			max_iat = p;
+			update = 1;
+		}
+		if(p<min_iat){
+			min_iat = p;
+			update = 1;
+		}
 		last_ta = ta;
 
-		if (update){
-			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
-			update = 0;
+		if(update) {
+		  printf("Task %s inter-arrival time: min: %llu / max: %llu\n\r",curtaskinfo.name, min_iat, max_iat);
+		  update = 0;
 		}
+
 		/* Task "load" */
 		Heavy_Work();
 	}
@@ -191,7 +221,7 @@ void Heavy_Work(void)
 	/*These values can be tunned to cause a desired load*/
 	lower=0;
 	upper=100;
-	subInterval=280000;
+	subInterval=1000000;
 
 	 /* Calculation */
 	 /* Finding step size */

@@ -20,6 +20,7 @@
 
 #define MS_2_NS(ms)(ms*1000*1000) /* Convert ms to ns */
 #define NS_IN_SEC 1000000000L
+#define BOOT_ITER 10
 
 /* *****************************************************
  * Define task structure for setting input arguments
@@ -90,20 +91,21 @@ void task_code(void *args) {
 	RT_TASK_INFO curtaskinfo;
 	struct taskArgsStruct *taskArgs;
 
-	RTIME ta=0;
+	RTIME ta, last_ta, max_ta = 0;
+	RTIME p;
+	RTIME min_ta = LLONG_MIN;
 	unsigned long overruns;
 	int err;
+	int boot_flag = 0;
 	
 	/* Get task information */
 	curtask=rt_task_self();
 	rt_task_inquire(curtask,&curtaskinfo);
 	taskArgs=(struct taskArgsStruct *)args;
 	printf("Task %s init, period:%llu\n", curtaskinfo.name, taskArgs->taskPeriod_ns);
-	RTIME p;
-	RTIME last_ta = 0;
-	RTIME max = 0;
+
 	//printf(max);
-	RTIME min = LLONG_MIN ;
+	int iter = 0;
 	//printf(min);
 	/* Set task as periodic */
 	err=rt_task_set_periodic(NULL, TM_NOW, taskArgs->taskPeriod_ns);
@@ -115,18 +117,31 @@ void task_code(void *args) {
 			break;
 		}
 		printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
-		p = ta - (last_ta + taskArgs->taskPeriod_ns) ;
-		if(p>max){
-			max = p;
-			printf("max: %llu\n",max);
-		}
-		if(p<min){
-			min = p;
-			printf("min: %llu\n",min);
+		
+		iter++;
+		
+		if (iter == BOOT_ITER) {
+			max_ta = ta - last_ta;
+			min_ta = ta - last_ta;
+			boot_flag = 1;
+		} else 
+		if (iter > BOOT_ITER) {
+			p = ta - last_ta;//+ taskArgs->taskPeriod_ns) ;
+			if(p>max_ta){
+				max_ta = p;
+				// printf("max: %llu\n",max);
+			}
+			if(p<min_ta){
+				min_ta = p;
+				// printf("min: %llu\n",min);
+			}
 		}
 		/* Task "load" */
 		Heavy_Work();
 		last_ta = ta;
+
+		if (boot_flag)
+			printf("Time between successive jobs: max: %lu / min: %lu\n\n", max_ta, min_ta);
 	}
 	return;
 }

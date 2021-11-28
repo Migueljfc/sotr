@@ -25,10 +25,10 @@
 /* *****************************************************
  * Define task structure for setting input arguments
  * *****************************************************/
-struct taskArgsStruct {
-	RTIME taskPeriod_ns;
-	int mode;
-};
+ struct taskArgsStruct {
+	 RTIME taskPeriod_ns;
+	 int some_other_arg;
+ };
 
 /* *******************
  * Task attributes 
@@ -75,19 +75,17 @@ int changeAffinity(RT_TASK task1, RT_TASK task2){
 	return(1);
 	}
 }
-
-
 /* ******************
 * Main function
 * *******************/ 
 int main(int argc, char *argv[]) {
-	int err,err2,err3; 
+	int err,err2,err3,semaphore; 
 	struct taskArgsStruct taskAArgs;
 	struct taskArgsStruct taskBArgs;
 	struct taskArgsStruct taskCArgs;
 
 	//Create Semaphore
-	int semaphore = rt_sem_create(&sem,"semaphore",1,S_FIFO);
+	semaphore = rt_sem_create(&sem,"semaphore",1,S_FIFO);
 
 	/* Lock memory to prevent paging */
 	mlockall(MCL_CURRENT|MCL_FUTURE); 
@@ -117,9 +115,7 @@ int main(int argc, char *argv[]) {
 	/* Start RT task */
 	/* Args: task decriptor, address of function/implementation and argument*/
 	taskAArgs.taskPeriod_ns = TASK_PERIOD_NS;
-	taskAArgs.mode = 1;
 	taskBArgs.taskPeriod_ns = TASK_PERIOD_NS; 
-	printf("%d", taskBArgs.mode);
 	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS;
 
 	changeAffinity(task_b_desc,task_c_desc);
@@ -135,9 +131,8 @@ int main(int argc, char *argv[]) {
 		
 }
 
-
 /* ***********************************
-* Task body implementation
+* Periodic Task body implementation
 * *************************************/
 void periodic_task_code(void *args) {
 	RT_TASK *curtask;
@@ -161,7 +156,6 @@ void periodic_task_code(void *args) {
 
 	/* Set task as periodic */
 	err=rt_task_set_periodic(NULL, TM_NOW, taskArgs->taskPeriod_ns);
-	err=rt_
 	for(;;) {
 		rt_sem_p(&sem,TM_INFINITE);
 		err=rt_task_wait_period(&overruns);
@@ -231,14 +225,14 @@ void sporadic_task_code(void *args) {
 	for(;;) {
 		rt_sem_p(&sem,TM_INFINITE);
 	
-		if(err) {
+		/* if(err) {
 			printf("task %s overrun!!!\n", curtaskinfo.name);
 			break;
-		}
+		} */
 		seq_number++;
 		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
-		printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
 		niter++;
+		printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
 		
 		if (niter == BOOT_ITER) {
 			max_ta = ta - last_ta;
@@ -339,3 +333,4 @@ void Heavy_Work(void)
 	}
 
 }
+

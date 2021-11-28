@@ -24,10 +24,10 @@
 /* *****************************************************
  * Define task structure for setting input arguments
  * *****************************************************/
- struct taskArgsStruct {
-	 RTIME taskPeriod_ns;
-	 int some_other_arg;
- };
+struct taskArgsStruct {
+	RTIME taskPeriod_ns;
+	int mode;
+};
 
 /* *******************
  * Task attributes 
@@ -41,6 +41,14 @@
 RT_TASK task_a_desc; // Task decriptor
 RT_TASK task_b_desc;
 RT_TASK task_c_desc;
+
+/* **********************
+ * Semaphore attributes
+ * **********************/
+RT_SEM sem;
+
+int N = 0;			//Shared memory
+
 
 /* *********************
 * Function prototypes
@@ -64,6 +72,8 @@ int changeAffinity(RT_TASK task1, RT_TASK task2){
 	return(1);
 	}
 }
+
+
 /* ******************
 * Main function
 * *******************/ 
@@ -72,6 +82,7 @@ int main(int argc, char *argv[]) {
 	struct taskArgsStruct taskAArgs;
 	struct taskArgsStruct taskBArgs;
 	struct taskArgsStruct taskCArgs;
+
 	
 	/* Lock memory to prevent paging */
 	mlockall(MCL_CURRENT|MCL_FUTURE); 
@@ -101,10 +112,14 @@ int main(int argc, char *argv[]) {
 	/* Start RT task */
 	/* Args: task decriptor, address of function/implementation and argument*/
 	taskAArgs.taskPeriod_ns = TASK_PERIOD_NS;
+	taskAArgs.mode = 1;
 	taskBArgs.taskPeriod_ns = TASK_PERIOD_NS; 
+	printf("%d", taskBArgs.mode);
 	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS;
 
 	changeAffinity(task_b_desc,task_c_desc);
+
+	rt_sem_create()
 
     rt_task_start(&task_a_desc, &task_code, (void *)&taskAArgs);
 	rt_task_start(&task_b_desc, &task_code, (void *)&taskBArgs);
@@ -116,6 +131,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 		
 }
+
 
 /* ***********************************
 * Task body implementation
@@ -143,6 +159,7 @@ void task_code(void *args) {
 
 	/* Set task as periodic */
 	err=rt_task_set_periodic(NULL, TM_NOW, taskArgs->taskPeriod_ns);
+	err=rt_
 	for(;;) {
 		err=rt_task_wait_period(&overruns);
 		ta=rt_timer_read();
@@ -247,4 +264,3 @@ void Heavy_Work(void)
 	}
 
 }
-

@@ -23,7 +23,6 @@
 #define MS_2_NS(ms)(ms*1000*1000) /* Convert ms to ns */
 #define NS_IN_SEC 1000000000L
 #define BOOT_ITER 10
-
 /* *****************************************************
  * Define task structure for setting input arguments
  * *****************************************************/
@@ -94,21 +93,20 @@ void task_code(void *args) {
 	struct taskArgsStruct *taskArgs;
 
 	RTIME ta, last_ta, max_ta = 0;
-	RTIME p;
+	RTIME ita;
 	RTIME min_ta = LLONG_MIN;
 	unsigned long overruns;
 	int err;
-	int boot_flag = 0;
-	
+	int update = 0;
+	int niter = 0;
+
 	/* Get task information */
 	curtask=rt_task_self();
 	rt_task_inquire(curtask,&curtaskinfo);
 	taskArgs=(struct taskArgsStruct *)args;
 	printf("Task %s init, period:%llu\n", curtaskinfo.name, taskArgs->taskPeriod_ns);
 
-	//printf(max);
-	int iter = 0;
-	//printf(min);
+
 	/* Set task as periodic */
 	err=rt_task_set_periodic(NULL, TM_NOW, taskArgs->taskPeriod_ns);
 	for(;;) {
@@ -118,32 +116,37 @@ void task_code(void *args) {
 			printf("task %s overrun!!!\n", curtaskinfo.name);
 			break;
 		}
-		printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
+		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
+		niter++;
 		
-		iter++;
-		
-		if (iter == BOOT_ITER) {
+		if (niter == BOOT_ITER) {
 			max_ta = ta - last_ta;
 			min_ta = ta - last_ta;
-			boot_flag = 1;
+			update = 1;
 		} else 
-		if (iter > BOOT_ITER) {
-			p = ta - last_ta;//+ taskArgs->taskPeriod_ns) ;
-			if(p>max_ta){
-				max_ta = p;
-				// printf("max: %llu\n",max);
+		if (niter > BOOT_ITER) {
+			ita = ta - last_ta;
+			if(ita>max_ta){
+				max_ta = ita;
+				update = 1;
+		
 			}
-			if(p<min_ta){
-				min_ta = p;
-				// printf("min: %llu\n",min);
+			if(ita<min_ta){
+				min_ta = ita;
+				update = 1;
+				
 			}
 		}
 		/* Task "load" */
 		Heavy_Work();
 		last_ta = ta;
 
-		if (boot_flag)
-			printf("Time between successive jobs: max: %lu / min: %lu\n\n", max_ta, min_ta);
+		if (update){
+			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
+			update = 0;
+		}
+		/* Task "load" */
+		Heavy_Work();
 	}
 	return;
 }
@@ -190,7 +193,7 @@ void Heavy_Work(void)
 	/*These values can be tunned to cause a desired load*/
 	lower=0;
 	upper=100;
-	subInterval=1000000;
+	subInterval=280000;
 
 	 /* Calculation */
 	 /* Finding step size */
@@ -217,42 +220,3 @@ void Heavy_Work(void)
 
 }
 
-
-struct  timespec  TsAdd(struct  timespec  ts1, struct  timespec  ts2){
-	
-    struct  timespec  tr;
-	
-	// Add the two timespec variables
-    	tr.tv_sec = ts1.tv_sec + ts2.tv_sec ;
-    	tr.tv_nsec = ts1.tv_nsec + ts2.tv_nsec ;
-	// Check for nsec overflow	
-	if (tr.tv_nsec >= NS_IN_SEC) {
-        	tr.tv_sec++ ;
-		tr.tv_nsec = tr.tv_nsec - NS_IN_SEC ;
-    	}
-
-    return (tr) ;
-}
-
-// Subtracts two timespect variables
-struct  timespec  TsSub (struct  timespec  ts1, struct  timespec  ts2) {
-  struct  timespec  tr;
-
-  // Subtract second arg from first one 
-  if ((ts1.tv_sec < ts2.tv_sec) || ((ts1.tv_sec == ts2.tv_sec) && (ts1.tv_nsec <= ts2.tv_nsec))) {
-    // Result would be negative. Return 0
-    tr.tv_sec = tr.tv_nsec = 0 ;  
-  } else {						
-	// If T1 > T2, proceed 
-        tr.tv_sec = ts1.tv_sec - ts2.tv_sec ;
-        if (ts1.tv_nsec < ts2.tv_nsec) {
-            tr.tv_nsec = ts1.tv_nsec + NS_IN_SEC - ts2.tv_nsec ;
-            tr.tv_sec-- ;				
-        } else {
-            tr.tv_nsec = ts1.tv_nsec - ts2.tv_nsec ;
-        }
-    }
-
-    return (tr) ;
-
-}

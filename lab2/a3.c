@@ -37,7 +37,7 @@
 
 #define TASK_A_PRIO 25 	// RT priority [0..99]
 #define TASK_PERIOD_NS MS_2_NS(1000)
-#define BOOT_ITER 10
+
 RT_TASK task_a_desc; // Task decriptor
 RT_TASK task_b_desc;
 RT_TASK task_c_desc;
@@ -125,20 +125,21 @@ void task_code(void *args) {
 	RT_TASK_INFO curtaskinfo;
 	struct taskArgsStruct *taskArgs;
 
-	RTIME ta, last_ta, max_ta = 0;
-	RTIME ita;
-	RTIME min_ta = LLONG_MIN;
+	RTIME ta=0;
 	unsigned long overruns;
 	int err;
-	int update = 0;
-	int niter = 0;
-
+	
 	/* Get task information */
 	curtask=rt_task_self();
 	rt_task_inquire(curtask,&curtaskinfo);
 	taskArgs=(struct taskArgsStruct *)args;
 	printf("Task %s init, period:%llu\n", curtaskinfo.name, taskArgs->taskPeriod_ns);
-
+	int nitter = 0 ;
+	int update = 0;
+	RTIME p;
+	RTIME last_ta;
+	RTIME max_iat = 0;
+	RTIME min_iat = LLONG_MAX ;
 
 	/* Set task as periodic */
 	err=rt_task_set_periodic(NULL, TM_NOW, taskArgs->taskPeriod_ns);
@@ -149,35 +150,29 @@ void task_code(void *args) {
 			printf("task %s overrun!!!\n", curtaskinfo.name);
 			break;
 		}
-		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
-		niter++;
-		
-		if (niter == BOOT_ITER) {
-			max_ta = ta - last_ta;
-			min_ta = ta - last_ta;
-			update = 1;
-		} else 
-		if (niter > BOOT_ITER) {
-			ita = ta - last_ta;
-			if(ita>max_ta){
-				max_ta = ita;
-				update = 1;
-		
-			}
-			if(ita<min_ta){
-				min_ta = ita;
-				update = 1;
-				
-			}
+		printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
+		nitter ++;
+		if(nitter == 1){
+			last_ta = ta;
+			continue;
 		}
-		/* Task "load" */
-		Heavy_Work();
+		
+		p = ta - last_ta ;
+		if(p>max_iat){
+			max_iat = p;
+			update = 1;
+		}
+		if(p<min_iat){
+			min_iat = p;
+			update = 1;
+		}
 		last_ta = ta;
 
-		if (update){
-			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
-			update = 0;
+		if(update) {
+		  printf("Task %s inter-arrival time: min: %llu / max: %llu\n\r",curtaskinfo.name, min_iat, max_iat);
+		  update = 0;
 		}
+
 		/* Task "load" */
 		Heavy_Work();
 	}

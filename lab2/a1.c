@@ -4,6 +4,8 @@
 * Paulo Pedreiras
 * 	Out/2020: Upgraded from Xenomai V2.5 to V3.1    
 * 
+* Diogo Vicente - 93262
+* Miguel Cabral - 93091
 ************************************************************** */
 
 #include <stdio.h>

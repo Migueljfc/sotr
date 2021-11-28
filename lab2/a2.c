@@ -18,6 +18,7 @@
 #include <alchemy/task.h>
 #include <alchemy/timer.h>
 
+
 #define MS_2_NS(ms)(ms*1000*1000) /* Convert ms to ns */
 #define NS_IN_SEC 1000000000L
 
@@ -42,13 +43,15 @@ RT_TASK task_a_desc; // Task decriptor
 RT_TASK task_b_desc;
 RT_TASK task_c_desc;
 
+
+
 /* *********************
 * Function prototypes
 * **********************/
 void catch_signal(int sig); 	/* Catches CTRL + C to allow a controlled termination of the application */
 void wait_for_ctrl_c(void);
 void Heavy_Work(void);      	/* Load task */
-void task_code(void *args); 	/* Task body */
+void task_code(void *args); 	/* Periodic Task body */
 int changeAffinity(RT_TASK task1,RT_TASK task2); //Change affinity to CPU0 
 
 
@@ -118,7 +121,7 @@ int main(int argc, char *argv[]) {
 }
 
 /* ***********************************
-* Task body implementation
+* Periodic Task body implementation
 * *************************************/
 void task_code(void *args) {
 	RT_TASK *curtask;
@@ -170,9 +173,6 @@ void task_code(void *args) {
 				
 			}
 		}
-		/* Task "load" */
-		Heavy_Work();
-		last_ta = ta;
 
 		if (update){
 			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
@@ -180,6 +180,7 @@ void task_code(void *args) {
 		}
 		/* Task "load" */
 		Heavy_Work();
+		last_ta = ta;
 	}
 	return;
 }

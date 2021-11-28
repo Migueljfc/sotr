@@ -137,9 +137,6 @@ void task_code(void *args) {
 				
 			}
 		}
-		/* Task "load" */
-		Heavy_Work();
-		last_ta = ta;
 
 		if (update){
 			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
@@ -147,6 +144,7 @@ void task_code(void *args) {
 		}
 		/* Task "load" */
 		Heavy_Work();
+		last_ta = ta;
 	}
 	return;
 }

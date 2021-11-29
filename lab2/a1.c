@@ -4,8 +4,10 @@
 * Paulo Pedreiras
 * 	Out/2020: Upgraded from Xenomai V2.5 to V3.1    
 * 
-* Diogo Vicente - 93262
-* Miguel Cabral - 93091
+************************************************************** */
+/* ************************************************************
+* Miguel Cabral 93091
+* Diogo Vicente 93262	   
 ************************************************************** */
 
 #include <stdio.h>
@@ -191,7 +193,7 @@ void Heavy_Work(void)
 	/*These values can be tunned to cause a desired load*/
 	lower=0;
 	upper=100;
-	subInterval=280000;
+	subInterval=1000000;
 
 	 /* Calculation */
 	 /* Finding step size */

@@ -129,8 +129,7 @@ void task_code(void *args) {
 	struct taskArgsStruct *taskArgs;
 
 	RTIME ta, last_ta, max_ta = 0;
-	RTIME ita;
-	RTIME min_ta = LLONG_MIN;
+	RTIME ita, min_ta;
 	unsigned long overruns;
 	int err;
 	int update = 0;
@@ -152,34 +151,29 @@ void task_code(void *args) {
 			printf("task %s overrun!!!\n", curtaskinfo.name);
 			break;
 		}
-		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
+		printf("%s activation at time %llu", curtaskinfo.name,ta);
 		niter++;
-		
+		if( niter == 1) 
+		    last_ta = ta; 
+		ita = ta - last_ta;
 		if (niter == BOOT_ITER) {
-			max_ta = ta - last_ta;
-			min_ta = ta - last_ta;
-			update = 1;
+			max_ta = ita;
+			min_ta = ita;
 		} else 
 		if (niter > BOOT_ITER) {
-			ita = ta - last_ta;
-			if(ita>max_ta){
-				max_ta = ita;
-				update = 1;
+			if(ita>max_ta)
+				max_ta = ita;			
+			if(ita<min_ta)
+				min_ta = ita;				
+			
+			printf(" | min: %llu / max: %llu", min_ta, max_ta);
+		}
+		printf("\n");
 		
-			}
-			if(ita<min_ta){
-				min_ta = ita;
-				update = 1;
-				
-			}
-		}
-
-		if (update){
-			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
-			update = 0;
-		}
+		
 		/* Task "load" */
 		Heavy_Work();
+		
 		last_ta = ta;
 	}
 	return;

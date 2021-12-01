@@ -225,7 +225,7 @@ void Heavy_Work(void)
 	/*These values can be tunned to cause a desired load*/
 	lower=0;
 	upper=100;
-	subInterval=1000000;
+	subInterval=1020000;
 
 	 /* Calculation */
 	 /* Finding step size */

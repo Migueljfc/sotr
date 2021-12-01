@@ -74,7 +74,7 @@ int changeAffinity(RT_TASK task1, RT_TASK task2, RT_TASK task3){
 	cpu_set_t cpuset;                                       //cpu_set bit mask.
 	CPU_ZERO(&cpuset);                                      //Initialize it all to 0
 	CPU_SET(0,&cpuset);                                     //Set the bit that represents core 0
-	if(rt_task_set_affinity(&task1,&cpuset) || rt_task_set_affinity(&task2,&cpuset)) {     //Set thread's CPU affinity mask to 0 
+	if(rt_task_set_affinity(&task1,&cpuset) || rt_task_set_affinity(&task2,&cpuset) || rt_task_set_affinity(&task3,&cpuset)) {     //Set thread's CPU affinity mask to 0 
 		printf("\n Lock of process to CPU0 failed!!!");
 	return(1);
 	}
@@ -96,9 +96,9 @@ int main(int argc, char *argv[]) {
 
 	/* Create RT task */
 	/* Args: descriptor, name, stack size, priority [0..99] and mode (flags for CPU, FPU, joinable ...) */
-	err=rt_task_create(&task_a_desc, "Task a", TASK_STKSZ, TASK_A_PRIO, TASK_MODE);
-    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 50, TASK_MODE);
-    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 45, TASK_MODE);
+	err=rt_task_create(&task_a_desc, "Task a", TASK_STKSZ, 25, TASK_MODE);
+    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 30, TASK_MODE);
+    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 15, TASK_MODE);
 	if(err || err2 || err3) {
         if(err){
             printf("Error creating task a (error code = %d)\n",err);

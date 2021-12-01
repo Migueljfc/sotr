@@ -56,17 +56,17 @@ void catch_signal(int sig); 	/* Catches CTRL + C to allow a controlled terminati
 void wait_for_ctrl_c(void);
 void Heavy_Work(void);      	/* Load task */
 void task_code(void *args); 	/* Periodic Task body */
-int changeAffinity(RT_TASK task1,RT_TASK task2); //Change affinity to CPU0 
+int changeAffinity(RT_TASK task1, RT_TASK task2, RT_TASK task3); //Change affinity to CPU0 
 
 
 /* *********************
 * Change Affinity function
 * **********************/
-int changeAffinity(RT_TASK task1, RT_TASK task2){
+int changeAffinity(RT_TASK task1, RT_TASK task2, RT_TASK task3){
 	cpu_set_t cpuset;                                       //cpu_set bit mask.
 	CPU_ZERO(&cpuset);                                      //Initialize it all to 0
 	CPU_SET(0,&cpuset);                                     //Set the bit that represents core 0
-	if(rt_task_set_affinity(&task1,&cpuset) || rt_task_set_affinity(&task2,&cpuset)) {     //Set thread's CPU affinity mask to 0 
+	if(rt_task_set_affinity(&task1,&cpuset) || rt_task_set_affinity(&task2,&cpuset) || rt_task_set_affinity(&task3,&cpuset)) {     //Set thread's CPU affinity mask to 0 
 		printf("\n Lock of process to CPU0 failed!!!");
 	return(1);
 	}
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 	taskBArgs.taskPeriod_ns = TASK_PERIOD_NS; 
 	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS;
 
-	changeAffinity(task_b_desc,task_c_desc);
+	changeAffinity(task_a_desc,task_b_desc,task_c_desc);
 
     rt_task_start(&task_a_desc, &task_code, (void *)&taskAArgs);
 	rt_task_start(&task_b_desc, &task_code, (void *)&taskBArgs);

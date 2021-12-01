@@ -64,13 +64,13 @@ void wait_for_ctrl_c(void);
 void Heavy_Work(void);      	/* Load task */
 void periodic_task_code(void *args); 	/* Periodic Task body */
 void sporadic_task_code(void *args); 	/* Sporadic Task body */
-int changeAffinity(RT_TASK task1,RT_TASK task2); //Change affinity to CPU0 
+int changeAffinity(RT_TASK task1, RT_TASK task2, RT_TASK task3); //Change affinity to CPU0 
 
 
 /* *********************
 * Change Affinity function
 * **********************/
-int changeAffinity(RT_TASK task1, RT_TASK task2){
+int changeAffinity(RT_TASK task1, RT_TASK task2, RT_TASK task3){
 	cpu_set_t cpuset;                                       //cpu_set bit mask.
 	CPU_ZERO(&cpuset);                                      //Initialize it all to 0
 	CPU_SET(0,&cpuset);                                     //Set the bit that represents core 0
@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
 	/* Create RT task */
 	/* Args: descriptor, name, stack size, priority [0..99] and mode (flags for CPU, FPU, joinable ...) */
 	err=rt_task_create(&task_a_desc, "Task a", TASK_STKSZ, TASK_A_PRIO, TASK_MODE);
-    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 10, TASK_MODE);
-    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 75, TASK_MODE);
+    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 50, TASK_MODE);
+    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 45, TASK_MODE);
 	if(err || err2 || err3) {
         if(err){
             printf("Error creating task a (error code = %d)\n",err);
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
 	taskBArgs.taskPeriod_ns = TASK_PERIOD_NS; 
 	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS;
 
-	changeAffinity(task_b_desc,task_c_desc);
+	changeAffinity(task_a_desc,task_b_desc,task_c_desc);
 
     rt_task_start(&task_a_desc, &periodic_task_code, (void *)&taskAArgs);
 	rt_task_start(&task_b_desc, &sporadic_task_code, (void *)&taskBArgs);
@@ -169,34 +169,28 @@ void periodic_task_code(void *args) {
 			break;
 		}
 		seq_number=1;
-		printf("Task %s activation at time %llu with seq number: %d\n", curtaskinfo.name,ta,seq_number);
+		printf("%s activation at time %llu with seq number: %d", curtaskinfo.name,ta,seq_number);
 		//printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
 		niter++;
 		
 		if (niter == BOOT_ITER) {
 			max_ta = ta - last_ta;
 			min_ta = ta - last_ta;
-			update = 1;
 		} else 
 		if (niter > BOOT_ITER) {
 			ita = ta - last_ta;
 			if(ita>max_ta){
 				max_ta = ita;
-				update = 1;
-		
+
 			}
 			if(ita<min_ta){
 				min_ta = ita;
-				update = 1;
-				
-			}
-		}
-		
 
-		if (update){
-			printf("\n->Time between successive jobs of %s : min: %llu / max: %llu\n",curtaskinfo.name, min_ta, max_ta);
-			update = 0;
+			}
+			printf(" | min: %llu / max: %llu", min_ta, max_ta);
 		}
+		printf("\n");
+
 		/* Task "load" */
 		Heavy_Work();
 		rt_sem_v(&sem);
@@ -230,33 +224,29 @@ void sporadic_task_code(void *args) {
 		rt_sem_p(&sem,TM_INFINITE);
 		ta=rt_timer_read();
 		seq_number++;
-		printf("Task %s activation at time %llu with seq number: %d\n", curtaskinfo.name,ta,seq_number);
+		printf("%s activation at time %llu with seq number: %d", curtaskinfo.name,ta,seq_number);
 		niter++;
 		//printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
 		
 		if (niter == BOOT_ITER) {
 			max_ta = ta - last_ta;
 			min_ta = ta - last_ta;
-			update = 1;
+
 		} else 
 		if (niter > BOOT_ITER) {
 			ita = ta - last_ta;
 			if(ita>max_ta){
 				max_ta = ita;
-				update = 1;
-		
+
 			}
 			if(ita<min_ta){
 				min_ta = ita;
-				update = 1;
 				
 			}
+			printf(" | min: %llu / max: %llu", min_ta, max_ta);
 		}
-		
-		if (update){
-			printf("\n->Time between successive jobs of %s : min: %llu / max: %llu\n",curtaskinfo.name, min_ta, max_ta);
-			update = 0;
-		}
+		printf("\n");
+
 		/* Task "load" */
 		Heavy_Work();
 		rt_sem_v(&sem);

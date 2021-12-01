@@ -47,7 +47,6 @@
 RT_TASK task_a_desc; // Task decriptor
 RT_TASK task_b_desc;
 RT_TASK task_c_desc;
-
 RT_SEM sem; //shared semaphore 
 
 /* ****************
@@ -89,16 +88,16 @@ int main(int argc, char *argv[]) {
 	struct taskArgsStruct taskCArgs;
 
 	//Create Semaphore
-	semaphore = rt_sem_create(&sem,"semaphore",1,S_FIFO);
+	rt_sem_create(&sem,"semaphore",1,S_FIFO);
 
 	/* Lock memory to prevent paging */
 	mlockall(MCL_CURRENT|MCL_FUTURE); 
 
 	/* Create RT task */
 	/* Args: descriptor, name, stack size, priority [0..99] and mode (flags for CPU, FPU, joinable ...) */
-	err=rt_task_create(&task_a_desc, "Task a", TASK_STKSZ, 25, TASK_MODE);
-    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 30, TASK_MODE);
-    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 15, TASK_MODE);
+	err=rt_task_create(&task_a_desc, "Task a", TASK_STKSZ, TASK_A_PRIO, TASK_MODE);
+    err2=rt_task_create(&task_b_desc, "Task b", TASK_STKSZ, 20, TASK_MODE);
+    err3=rt_task_create(&task_c_desc, "Task c", TASK_STKSZ, 10, TASK_MODE);
 	if(err || err2 || err3) {
         if(err){
             printf("Error creating task a (error code = %d)\n",err);
@@ -120,7 +119,7 @@ int main(int argc, char *argv[]) {
 	/* Args: task decriptor, address of function/implementation and argument*/
 	taskAArgs.taskPeriod_ns = TASK_PERIOD_NS;
 	taskBArgs.taskPeriod_ns = TASK_PERIOD_NS; 
-	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS;
+	taskCArgs.taskPeriod_ns = TASK_PERIOD_NS; 
 
 	changeAffinity(task_a_desc,task_b_desc,task_c_desc);
 

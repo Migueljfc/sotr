@@ -5,6 +5,10 @@
 * 	Out/2020: Upgraded from Xenomai V2.5 to V3.1    
 * 
 ************************************************************** */
+/* ************************************************************
+* Miguel Cabral 93091
+* Diogo Vicente 93262	   
+************************************************************** */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -165,8 +169,8 @@ void periodic_task_code(void *args) {
 			break;
 		}
 		seq_number=1;
-		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
-		printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
+		printf("Task %s activation at time %llu with seq number: %d\n", curtaskinfo.name,ta,seq_number);
+		//printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
 		niter++;
 		
 		if (niter == BOOT_ITER) {
@@ -190,7 +194,7 @@ void periodic_task_code(void *args) {
 		
 
 		if (update){
-			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
+			printf("\n->Time between successive jobs of %s : min: %llu / max: %llu\n",curtaskinfo.name, min_ta, max_ta);
 			update = 0;
 		}
 		/* Task "load" */
@@ -210,7 +214,7 @@ void sporadic_task_code(void *args) {
 
 	RTIME ta, last_ta, max_ta = 0;
 	RTIME ita;
-	RTIME min_ta = LLONG_MIN;
+	RTIME min_ta = LLONG_MAX;
 	unsigned long overruns;
 	int err;
 	int update = 0;
@@ -224,15 +228,11 @@ void sporadic_task_code(void *args) {
 
 	for(;;) {
 		rt_sem_p(&sem,TM_INFINITE);
-	
-		/* if(err) {
-			printf("task %s overrun!!!\n", curtaskinfo.name);
-			break;
-		} */
+		ta=rt_timer_read();
 		seq_number++;
-		//printf("Task %s activation at time %llu\n", curtaskinfo.name,ta);
+		printf("Task %s activation at time %llu with seq number: %d\n", curtaskinfo.name,ta,seq_number);
 		niter++;
-		printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
+		//printf("Task %s seq number: %d\n", curtaskinfo.name,seq_number);
 		
 		if (niter == BOOT_ITER) {
 			max_ta = ta - last_ta;
@@ -254,7 +254,7 @@ void sporadic_task_code(void *args) {
 		}
 		
 		if (update){
-			printf("Time between successive jobs of %s : min: %llu / max: %llu\n\n",curtaskinfo.name, min_ta, max_ta);
+			printf("\n->Time between successive jobs of %s : min: %llu / max: %llu\n",curtaskinfo.name, min_ta, max_ta);
 			update = 0;
 		}
 		/* Task "load" */
